@@ -1,3 +1,4 @@
+// components/coaching /CoachingClientVew.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -149,8 +150,8 @@ export default function CoachingClientView() {
         // Check for training session on this date
         const trainingSession = trainingSessions?.find(session => session.scheduled_date === dateString);
         
-        // Prefer workout session over training session
-        const session = workoutSession || trainingSession;
+        // Prefer training session over workout session if both exist, as training_sessions is more detailed
+        const session = trainingSession || workoutSession;
         
         let template = null;
         let completed = false;
@@ -177,21 +178,15 @@ export default function CoachingClientView() {
           }
 
           sessionId = session.id;
-          scheduledTime = session.start_time || session.scheduled_time;
+          scheduledTime = session.start_time || (trainingSession ? trainingSession.scheduled_time : undefined);
           
-          // Determine completion status
-          if (workoutSession) {
-            completed = workoutSession.completed || false;
-          } else if (trainingSession) {
+          // Determine completion status based on session type
+          if (trainingSession) {
             completed = trainingSession.status === 'completed';
-            missed = trainingSession.status === 'no_show';
-          }
-
-          // Check if session is missed (past date and not completed)
-          const sessionDate = new Date(dateString);
-          const now = new Date();
-          if (sessionDate < now && !completed) {
-            missed = true;
+            missed = trainingSession.status === 'no_show' || (trainingSession.status === 'scheduled' && new Date(dateString) < new Date());
+          } else if (workoutSession) {
+            completed = workoutSession.completed || false;
+            missed = !workoutSession.completed && new Date(dateString) < new Date();
           }
         }
 
@@ -239,11 +234,16 @@ export default function CoachingClientView() {
       if (workout.sessionId) {
         router.push(`/workout-detail/${workout.sessionId}`);
       } else {
+        // Fallback if sessionId is not available, might need to adjust this logic
         router.push(`/workout-detail/${workout.template.id}`);
       }
     } else if (workout.missed) {
       // Show missed workout detail
-      router.push(`/workout-detail/${workout.template.id}`);
+      if (workout.sessionId) {
+        router.push(`/workout-detail/${workout.sessionId}`);
+      } else {
+        router.push(`/workout-detail/${workout.template.id}`);
+      }
     } else {
       // Navigate to start workout
       if (workout.sessionId) {
