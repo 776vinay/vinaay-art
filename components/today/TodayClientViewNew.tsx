@@ -1,3 +1,4 @@
+// components/today/TodayClientViewNew.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -80,15 +81,16 @@ export default function TodayClientView() {
   const stepProgress = (steps / stepGoal) * 100;
 
   // Get today's workout - use first available template if no specific workout
-  const todaysWorkout = workoutSessions.find(session => !session.completed) || 
+  // Filter for sessions that are not yet completed
+  const todaysWorkout = workoutSessions.find(session => session.status !== 'completed') || 
     (workoutTemplates.length > 0 ? { 
       id: workoutTemplates[0].id, 
       exercises: workoutTemplates[0].exercises,
-      duration_minutes: workoutTemplates[0].duration,
+      duration_minutes: workoutTemplates[0].estimated_duration_minutes, // Corrected property name
       template: workoutTemplates[0]
     } : null);
   
-  const completedWorkouts = workoutSessions.filter(session => session.completed);
+  const completedWorkouts = workoutSessions.filter(session => session.status === 'completed'); // Corrected status check
 
   // Get active goal
   const activeGoal = activeGoals[0] || {
